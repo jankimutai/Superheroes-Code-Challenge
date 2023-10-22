@@ -22,7 +22,7 @@ with app.app_context():
 
     # 🦸‍♀️ Seeding heroes...
     heroes = [
-        Hero(name="Kamala Khan", super_name="Ms. Marvel"),
+        Hero(name="Jan Kimutai", super_name="DC STICKY"),
         Hero(name="Doreen Green", super_name="Squirrel Girl"),
         Hero(name="Gwen Stacy", super_name="Spider-Gwen"),
         Hero(name="Janet Van Dyne", super_name="The Wasp"),
