@@ -1,6 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-
+from sqlalchemy_serializer import SerializerMixin
 from sqlalchemy.orm import validates
 db = SQLAlchemy()
 
@@ -13,11 +13,13 @@ db = SQLAlchemy()
 #                          db.Column('created_at',db.DateTime,default = datetime.utcnow()),
 #                          db.Column('updated_at',db.DateTime,default = datetime.utcnow(),onupdate=datetime.utcnow()),)
 
-class HeroPower(db.Model):
+class HeroPower(db.Model,SerializerMixin):
+    __tablename__ = 'heropower'
+    serialize_rules = ('-hero.powers', '-power.heroes',)
     id = db.Column(db.Integer,primary_key=True)
     strength = db.Column(db.String())
-    hero_id = db.Column( db.Integer, db.ForeignKey('hero.id'))
-    power_id = db.Column(db.Integer, db.ForeignKey('power.id'))
+    hero_id = db.Column( db.Integer, db.ForeignKey('heros.id'))
+    power_id = db.Column(db.Integer, db.ForeignKey('powers.id'))
     created_at = db.Column(db.DateTime,default = datetime.utcnow())
     updated_at = db.Column(db.DateTime,default = datetime.utcnow(),onupdate=datetime.utcnow())
 
@@ -29,9 +31,11 @@ class HeroPower(db.Model):
         return strength
 
 
-class Hero(db.Model):
-    __tablename__ = 'hero'
+class Hero(db.Model,SerializerMixin):
+    __tablename__ = 'heros'
 
+    serialize_rules = ('-powers.hero',)
+    
     id = db.Column(db.Integer, primary_key=True)
     name= db.Column(db.String())
     super_name= db.Column(db.String())
@@ -41,9 +45,10 @@ class Hero(db.Model):
     powers = db.relationship("HeroPower",backref= "hero")
 
 # add any models you may need. 
-class Power(db.Model):
-    __tablename__ = 'power'
+class Power(db.Model,SerializerMixin):
+    __tablename__ = 'powers'
 
+    serialize_rules = ('-heroes.power')
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String())
     description = db.Column(db.String())
