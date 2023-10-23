@@ -42,7 +42,7 @@ with app.app_context():
     # 🦸‍♀️ Adding powers to heroes...
     strengths = ["Strong", "Weak", "Average"]
     for hero in Hero.query.all():
-        for i in range(randint(1, 4)):
+        for i in range(randint(1, 9)):
             # get a random power
             power = choice(powers)
             hero_power = HeroPower(hero=hero, power=power, strength=choice(strengths))

@@ -86,7 +86,7 @@ class PowerById(Resource):
             power_dict = {
                 "id":power.id,
                 "name":power.name,
-                "description":power.name
+                "description":power.description,
             }
             response = make_response(jsonify(power_dict),200)
             return response
@@ -95,16 +95,63 @@ class PowerById(Resource):
             return response
         
     def patch(self,id):
-        power = Power.query.get(id)
+        power = Power.query.filter_by(id=id).first()
         if power:
-            data= request.get_data()
-            for attr in data:
-                setattr(power,attr,)
-        else:
-            response = make_response(jsonify({"error":"Power not found"}))
-            return response
+            data= request.get_json()
+            power.description = data['description']
             
-        
-api.add_resource(PowerById,'/powers/<int:id>')
+            errors = power.validate()
+            if errors:
+                return jsonify({'errors': errors}), 400
+            try:
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                return jsonify({'errors': [str(e)]}), 400
+            else:
+                power_dict = {
+                    "id":power.id,
+                    "name":power.name,
+                    "description":power.name
+                }
+                response = make_response(
+                    jsonify(power_dict),
+                    200
+                )
+                return response
+            finally:
+                response = make_response(jsonify({"success":f'{power.id} is successfully updated'}))
+        else:
+            response = make_response(jsonify({"Error" : "Power not found"},404))
+            return response
+api.add_resource(PowerById,'/powers/<int:id>')      
+
+class Hero_Power1(Resource):
+    def post(self):
+        data = request.get_json()
+
+        strength = data['strength']
+        power_id = data['power_id']
+        hero_id = data['hero_id']
+        hero_power = HeroPower(strength=strength, hero_id=hero_id, power_id=power_id)
+        db.session.add(hero_power)
+        db.session.commit()
+
+        hero = Hero.query.filter_by(id=hero_id).all()
+        powers = Power.query.filter_by(id=power_id).all()
+        powers_data = [{
+            "id":power.id,
+            "name" :power.name,
+            "description": power.description
+            }for power in powers]
+        response = {
+            'id': hero.id,
+            'name': hero.name,
+            'super_name': hero.super_name,
+            'powers': powers_data
+        }
+        return jsonify(response),201
+api.add_resource(Hero_Power1,"/heropower")
+
 if __name__ == '__main__':
     app.run(port=5555,debug=True)
