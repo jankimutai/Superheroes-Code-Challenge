@@ -2,9 +2,10 @@
 
 from flask import Flask, make_response,jsonify,request
 from flask_migrate import Migrate
-from flask_restful import Api,Resource
+from flask_restful import Api,Resource,reqparse
 
 from models import db, Hero,Power,HeroPower
+import jsonschema
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app1.db'
@@ -95,38 +96,44 @@ class PowerById(Resource):
             return response
         
     def patch(self,id):
+        parser = reqparse.RequestParser()
+        parser.add_argument("description")
+        data = parser.parse_args()
+
         power = Power.query.filter_by(id=id).first()
         if power:
-            data= request.get_json()
-            power.description = data['description']
-            
-            errors = power.validate()
-            if errors:
-                return jsonify({'errors': errors}), 400
-            try:
-                db.session.commit()
-            except Exception as e:
-                db.session.rollback()
-                return jsonify({'errors': [str(e)]}), 400
-            else:
-                power_dict = {
-                    "id":power.id,
-                    "name":power.name,
-                    "description":power.name
-                }
-                response = make_response(
-                    jsonify(power_dict),
-                    200
-                )
-                return response
-            finally:
-                response = make_response(jsonify({"success":f'{power.id} is successfully updated'}))
+            if data['description']:
+                power.description = data['description']
+
+                try:
+                    db.session.commit()
+                except ValueError as e:
+                    # Return a JSON data with the appropriate HTTP status code
+                    error_message = str(e)
+                    response = {
+                        'errors': [error_message]
+                    }
+                    return make_response(jsonify(response), 500)
+                else:
+                    power_dict = {
+                                "id":power.id,
+                                "name":power.name,
+                                "description":power.description
+                            }
+                    response = make_response(
+                                jsonify(power_dict),
+                                200
+                            )
+                    return response
+                finally:
+                    response = make_response(jsonify({"message": "Power updated successfully."}))
         else:
-            response = make_response(jsonify({"Error" : "Power not found"},404))
+            response = make_response(jsonify({"error":"Power not found"}))
             return response
+
 api.add_resource(PowerById,'/powers/<int:id>')      
 
-class Hero_Power1(Resource):
+class Hero_PowerResource(Resource):
     def post(self):
         data = request.get_json()
 
@@ -151,7 +158,7 @@ class Hero_Power1(Resource):
             'powers': powers_data
         }
         return jsonify(response),201
-api.add_resource(Hero_Power1,"/heropower")
+api.add_resource(Hero_PowerResource,"/heropower")
 
 if __name__ == '__main__':
     app.run(port=5555,debug=True)
